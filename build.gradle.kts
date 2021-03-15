@@ -1,8 +1,11 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
+    val kotlinVersion = "1.4.31"
+
     application
-    kotlin("jvm") version "1.4.31"
+    kotlin("jvm") version kotlinVersion
+    kotlin("plugin.serialization") version kotlinVersion
 }
 
 group = "me.alexk"
@@ -30,6 +33,7 @@ val prometheusKtVersion = "0.1.0"
 dependencies {
     implementation("io.ktor:ktor-server-core:$ktorVersion")
     implementation("io.ktor:ktor-server-netty:$ktorVersion")
+    implementation("io.ktor:ktor-serialization:$ktorVersion")
 
     // Logging
     implementation("org.slf4j:slf4j-api:$slf4jVersion")

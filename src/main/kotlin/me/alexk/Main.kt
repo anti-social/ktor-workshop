@@ -5,16 +5,29 @@ import dev.evo.prometheus.ktor.metricsModule
 import io.ktor.application.call
 import io.ktor.application.install
 import io.ktor.content.TextContent
+import io.ktor.features.ContentNegotiation
 import io.ktor.features.StatusPages
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.response.respond
-import io.ktor.response.respondText
 import io.ktor.routing.get
 import io.ktor.routing.routing
+import io.ktor.serialization.json
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
-import java.lang.IllegalArgumentException
+
+import kotlinx.serialization.Serializable
+
+@Serializable
+data class User(
+    val name: String,
+)
+
+@Serializable
+data class Hello(
+    val message: String = "Hello",
+    val user: User,
+)
 
 fun main() {
     val logger = mu.KotlinLogging.logger {}
@@ -34,12 +47,18 @@ fun main() {
             }
         }
 
+        install(ContentNegotiation) {
+            json()
+        }
+
         metricsModule()
 
         routing {
             get("/") {
-                throw IllegalArgumentException("no argument")
-                call.respondText("Hello world!")
+                val hello = Hello(
+                    user = User("world")
+                )
+                call.respond(hello)
             }
         }
     }.start(wait = true)
