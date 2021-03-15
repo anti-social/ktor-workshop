@@ -8,9 +8,14 @@ import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
 
 fun main() {
-    println("Hello world!")
+    val logger = mu.KotlinLogging.logger {}
 
-    embeddedServer(Netty, port = 8080) {
+    val host = "localhost"
+    val port = "8080"
+
+    logger.info("Starting ktor application at http://$host:$port")
+
+    embeddedServer(Netty, host = "localhost", port = 8080) {
         routing {
             get("/") {
                 call.respondText("Hello world!")
