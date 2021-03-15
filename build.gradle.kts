@@ -14,6 +14,10 @@ repositories {
         name = "logevo"
         url = uri("https://gitlab.evo.dev/api/v4/projects/2442/packages/maven")
     }
+    maven {
+        name = "metrics"
+        url = uri("https://dl.bintray.com/evo/maven")
+    }
 }
 
 val ktorVersion = "1.5.2"
@@ -21,6 +25,7 @@ val slf4jVersion = "1.7.30"
 val kotlinLoggingVersion = "2.0.4"
 val log4jVersion = "2.14.0"
 val logevoVersion = "0.2.0"
+val prometheusKtVersion = "0.1.0"
 
 dependencies {
     implementation("io.ktor:ktor-server-core:$ktorVersion")
@@ -31,6 +36,8 @@ dependencies {
     implementation("io.github.microutils:kotlin-logging:${kotlinLoggingVersion}")
     runtimeOnly("org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion")
     runtimeOnly("dev.evo.logging:logevo-log4j:$logevoVersion")
+
+    implementation("dev.evo:prometheus-kt-ktor:$prometheusKtVersion")
 }
 
 application {

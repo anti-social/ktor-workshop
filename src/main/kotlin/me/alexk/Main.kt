@@ -1,5 +1,7 @@
 package me.alexk
 
+import dev.evo.prometheus.ktor.metricsModule
+
 import io.ktor.application.call
 import io.ktor.response.respondText
 import io.ktor.routing.get
@@ -16,6 +18,8 @@ fun main() {
     logger.info("Starting ktor application at http://$host:$port")
 
     embeddedServer(Netty, host = "localhost", port = 8080) {
+        metricsModule()
+
         routing {
             get("/") {
                 call.respondText("Hello world!")
