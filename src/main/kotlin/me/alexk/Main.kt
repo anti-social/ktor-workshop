@@ -1,9 +1,20 @@
 package me.alexk
 
+import dev.evo.elasticmagic.Document
+import dev.evo.elasticmagic.ElasticsearchCluster
+import dev.evo.elasticmagic.ElasticsearchIndex
+import dev.evo.elasticmagic.ElasticsearchVersion
+import dev.evo.elasticmagic.SearchQuery
+import dev.evo.elasticmagic.compile.CompilerProvider
+import dev.evo.elasticmagic.serde.json.JsonDeserializer
+import dev.evo.elasticmagic.serde.json.JsonSerializer
+import dev.evo.elasticmagic.transport.ElasticsearchKtorTransport
+
 import dev.evo.prometheus.ktor.metricsModule
 
 import io.ktor.application.call
 import io.ktor.application.install
+import io.ktor.client.engine.cio.CIO
 import io.ktor.content.TextContent
 import io.ktor.features.ContentNegotiation
 import io.ktor.features.StatusPages
@@ -60,11 +71,43 @@ fun main() {
     }.start(wait = true)
 }
 
+object ProductDoc : Document() {
+    val rank by float()
+}
+
 fun Route.ourRoutes() {
+    val logger = mu.KotlinLogging.logger {}
+
+    val esTransport = ElasticsearchKtorTransport(
+        "http://es6-stg-prom-lb.prom.dev-cloud.evo.:9200",
+        CIO.create {}
+    )
+    val compilers = CompilerProvider(
+        ElasticsearchVersion(6, 0, 0),
+        JsonSerializer,
+        JsonDeserializer
+    )
+    val cluster = ElasticsearchCluster(esTransport, compilers)
+    val index = cluster["ua_trunk_catalog"]
+
     get("/") {
         val hello = Hello(
             user = User("world")
         )
         call.respond(hello)
+    }
+
+    get("/es") {
+        val query = SearchQuery {
+            functionScore(
+                query = null,
+                functions = listOf(
+                    fieldValueFactor(
+                        ProductDoc.rank,
+                    )
+                )
+            )
+        }
+        logger.info("${compilers.searchQuery.compile(compilers.serializer, query).body}")
     }
 }

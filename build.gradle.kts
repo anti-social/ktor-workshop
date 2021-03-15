@@ -1,7 +1,7 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    val kotlinVersion = "1.4.31"
+    val kotlinVersion = "1.4.30"
 
     application
     kotlin("jvm") version kotlinVersion
@@ -34,6 +34,7 @@ dependencies {
     implementation("io.ktor:ktor-server-core:$ktorVersion")
     implementation("io.ktor:ktor-server-netty:$ktorVersion")
     implementation("io.ktor:ktor-serialization:$ktorVersion")
+    implementation("io.ktor:ktor-client-cio:$ktorVersion")
 
     // Logging
     implementation("org.slf4j:slf4j-api:$slf4jVersion")
@@ -42,6 +43,10 @@ dependencies {
     runtimeOnly("dev.evo.logging:logevo-log4j:$logevoVersion")
 
     implementation("dev.evo:prometheus-kt-ktor:$prometheusKtVersion")
+
+    implementation("dev.evo.elasticmagic:elasticmagic")
+    implementation("dev.evo.elasticmagic:elasticmagic-serde-json")
+    implementation("dev.evo.elasticmagic:elasticmagic-transport-ktor")
 }
 
 application {
