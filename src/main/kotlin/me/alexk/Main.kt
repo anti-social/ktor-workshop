@@ -15,6 +15,7 @@ import dev.evo.elasticmagic.serde.json.JsonSerializer
 import dev.evo.elasticmagic.transport.ElasticsearchKtorTransport
 
 import dev.evo.prometheus.ktor.metricsModule
+import io.ktor.application.Application
 
 import io.ktor.application.call
 import io.ktor.application.install
@@ -30,6 +31,7 @@ import io.ktor.routing.get
 import io.ktor.routing.routing
 import io.ktor.serialization.json
 import io.ktor.server.engine.embeddedServer
+import io.ktor.server.netty.EngineMain
 import io.ktor.server.netty.Netty
 import kotlinx.serialization.SerialName
 
@@ -46,34 +48,31 @@ data class Hello(
     val user: User,
 )
 
-fun main() {
+fun main(args: Array<String>) {
+    EngineMain.main(args)
+}
+
+fun Application.module(testing: Boolean = false) {
     val logger = mu.KotlinLogging.logger {}
 
-    val host = "localhost"
-    val port = "8080"
-
-    logger.info("Starting ktor application at http://$host:$port")
-
-    embeddedServer(Netty, host = "localhost", port = 8080) {
-        install(StatusPages) {
-            exception<Throwable> { cause ->
-                call.respond(
-                    HttpStatusCode.InternalServerError,
-                    TextContent(cause.stackTraceToString(), ContentType.Text.Plain)
-                )
-            }
+    install(StatusPages) {
+        exception<Throwable> { cause ->
+            call.respond(
+                HttpStatusCode.InternalServerError,
+                TextContent(cause.stackTraceToString(), ContentType.Text.Plain)
+            )
         }
+    }
 
-        install(ContentNegotiation) {
-            json()
-        }
+    install(ContentNegotiation) {
+        json()
+    }
 
-        metricsModule()
+    metricsModule()
 
-        routing {
-            ourRoutes()
-        }
-    }.start(wait = true)
+    routing {
+        ourRoutes()
+    }
 }
 
 object ProductDoc : Document() {
@@ -88,6 +87,7 @@ val RANK_BOOST = NodeHandle<FunctionScoreNode>()
 class SearchResponse(
     @SerialName("total_hits")
     val totalHits: Long?,
+    val took: Long? = null,
 )
 
 fun Route.ourRoutes() {
@@ -146,6 +146,6 @@ fun Route.ourRoutes() {
         val result = index.search(query)
         println(result)
 
-        call.respond(SearchResponse(totalHits = result.totalHits))
+        call.respond(SearchResponse(totalHits = result.totalHits, took = result.took))
     }
 }
