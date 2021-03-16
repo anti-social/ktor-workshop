@@ -1,9 +1,13 @@
 package me.alexk
 
+import dev.evo.elasticmagic.BoolNode
 import dev.evo.elasticmagic.Document
 import dev.evo.elasticmagic.ElasticsearchCluster
 import dev.evo.elasticmagic.ElasticsearchIndex
 import dev.evo.elasticmagic.ElasticsearchVersion
+import dev.evo.elasticmagic.FunctionScore
+import dev.evo.elasticmagic.FunctionScoreNode
+import dev.evo.elasticmagic.NodeHandle
 import dev.evo.elasticmagic.SearchQuery
 import dev.evo.elasticmagic.compile.CompilerProvider
 import dev.evo.elasticmagic.serde.json.JsonDeserializer
@@ -27,6 +31,7 @@ import io.ktor.routing.routing
 import io.ktor.serialization.json
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
+import kotlinx.serialization.SerialName
 
 import kotlinx.serialization.Serializable
 
@@ -72,8 +77,18 @@ fun main() {
 }
 
 object ProductDoc : Document() {
+    val name by text()
     val rank by float()
 }
+
+val TOP = NodeHandle<BoolNode>()
+val RANK_BOOST = NodeHandle<FunctionScoreNode>()
+
+@Serializable
+class SearchResponse(
+    @SerialName("total_hits")
+    val totalHits: Long?,
+)
 
 fun Route.ourRoutes() {
     val logger = mu.KotlinLogging.logger {}
@@ -97,17 +112,40 @@ fun Route.ourRoutes() {
         call.respond(hello)
     }
 
-    get("/es") {
-        val query = SearchQuery {
-            functionScore(
-                query = null,
-                functions = listOf(
-                    fieldValueFactor(
-                        ProductDoc.rank,
+    get("/search") {
+        val query = SearchQuery(
+            BoolNode(
+                TOP,
+                should = listOf(
+                    FunctionScoreNode(
+                        RANK_BOOST,
+                        query = null,
                     )
                 )
             )
+        )
+
+        query.queryNode(RANK_BOOST) { node ->
+
+            node.functions.add(
+                FunctionScore.FieldValueFactor(
+                    ProductDoc.rank,
+                    missing = 0.0
+                )
+            )
         }
-        logger.info("${compilers.searchQuery.compile(compilers.serializer, query).body}")
+
+        query.queryNode(TOP) { node ->
+            node.should.add(
+                ProductDoc.name.match("test")
+            )
+        }
+
+        println(compilers.searchQuery.compile(compilers.serializer, query).body)
+
+        val result = index.search(query)
+        println(result)
+
+        call.respond(SearchResponse(totalHits = result.totalHits))
     }
 }
